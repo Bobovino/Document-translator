@@ -1,6 +1,6 @@
-import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,7 +16,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <meta
+          httpEquiv="Cross-Origin-Opener-Policy"
+          content="same-origin"
+        />
+        <meta
+          httpEquiv="Cross-Origin-Embedder-Policy"
+          content="require-corp"
+        />
+      </head>
+      {/* suppressHydrationWarning will ignore hydration mismatches for this element */}
+      <body suppressHydrationWarning className="__className_d65c78">
+        {children}
+      </body>
     </html>
   )
 }

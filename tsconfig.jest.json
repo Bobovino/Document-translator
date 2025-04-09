@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "types": ["jest", "node"],
+    "jsx": "react"
+  },
+  "include": [
+    "__tests__/**/*.ts",
+    "__tests__/**/*.tsx"
+  ]
+}

@@ -1,133 +1,83 @@
-import React, { useState, useCallback, useRef, DragEvent } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 
 interface FileDropZoneProps {
   onFileDrop: (file: File) => void;
-  accept?: string;
+  accept: string; // This will be converted to proper MIME types
   file: File | null;
+  isLoading?: boolean; // Add this prop
 }
 
-export default function FileDropZone({ onFileDrop, accept = '.pdf,.epub,.mobi', file }: FileDropZoneProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const FileDropZone: React.FC<FileDropZoneProps> = ({ onFileDrop, accept, file, isLoading = false }) => {
+  const [isDragActive, setIsDragActive] = useState(false);
 
-  const handleDragEnter = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  }, [isDragging]);
-
-  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFile = e.dataTransfer.files[0];
-      const fileName = droppedFile.name.toLowerCase();
-      const isValidFile = 
-        droppedFile.type === 'application/pdf' || 
-        fileName.endsWith('.pdf') ||
-        fileName.endsWith('.epub') || 
-        fileName.endsWith('.mobi');
-      
-      if (isValidFile) {
-        onFileDrop(droppedFile);
-      } else {
-        alert('Por favor, arrastra solo archivos PDF, EPUB o MOBI.');
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      console.log('Archivos recibidos:', acceptedFiles);
+      if (acceptedFiles.length > 0) {
+        onFileDrop(acceptedFiles[0]);
       }
-    }
-  }, [onFileDrop]);
+    },
+    [onFileDrop]
+  );
 
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      onFileDrop(e.target.files[0]);
-    }
-  };
-
-  // Determinar el icono según el tipo de archivo
-  const getFileIcon = () => {
-    if (!file) return "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z";
-    
-    const fileName = file.name.toLowerCase();
-    
-    if (fileName.endsWith('.epub') || fileName.endsWith('.mobi')) {
-      // Icono de libro para EPUB/MOBI
-      return "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253";
-    } else {
-      // Icono por defecto para PDF
-      return "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z";
-    }
-  };
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    // Simplifica la aceptación de archivos para evitar problemas
+    accept: {
+      'text/plain': ['.txt'],
+      'application/pdf': ['.pdf'],
+      'application/epub+zip': ['.epub'],
+      'application/octet-stream': ['.mobi'],
+    },
+    maxFiles: 1,
+    multiple: false,
+    onDragEnter: () => setIsDragActive(true),
+    onDragLeave: () => setIsDragActive(false),
+    onDropAccepted: () => setIsDragActive(false),
+    onDropRejected: (rejectedFiles) => {
+      console.log('Archivos rechazados:', rejectedFiles);
+      setIsDragActive(false);
+    },
+  });
 
   return (
     <div
-      className={`
-        relative w-full h-40 border-2 border-dashed rounded-lg p-4
-        flex flex-col items-center justify-center cursor-pointer
-        transition-colors duration-200
-        ${isDragging ? 'border-primary bg-primary bg-opacity-10' : 'border-gray-400'}
-        ${file ? 'bg-opacity-5 bg-green-500' : ''}
+      {...getRootProps()}
+      className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all
+        ${isDragActive ? 'border-blue-500 bg-blue-500 bg-opacity-10' : 'border-gray-600 hover:border-gray-400 bg-gray-700 bg-opacity-30'}
       `}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onClick={handleClick}
     >
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept={accept}
-        onChange={handleFileChange}
-      />
-
-      <svg 
-        className={`w-12 h-12 mb-3 ${file ? 'text-green-400' : 'text-gray-400'}`} 
-        fill="none" 
-        stroke="currentColor" 
-        viewBox="0 0 24 24" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth="2" 
-          d={getFileIcon()}
-        />
-      </svg>
-
-      <div className="text-center">
-        {file ? (
-          <>
-            <p className="font-medium text-green-400">Archivo seleccionado:</p>
-            <p className="text-sm text-gray-300 mt-1 truncate max-w-xs">{file.name}</p>
-          </>
-        ) : (
-          <>
-            <p className="font-medium">Arrastra un archivo aquí o haz clic para seleccionarlo</p>
-            <p className="text-sm text-gray-400 mt-1">Archivos PDF, EPUB y MOBI</p>
-          </>
-        )}
-      </div>
+      <input {...getInputProps()} />
+      
+      {isLoading ? (
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+          <p className="text-sm font-medium">Extracting text from PDF...</p>
+        </div>
+      ) : file ? (
+        <div className="flex flex-col items-center">
+          <svg className="w-8 h-8 mb-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p className="text-sm font-medium">{file.name}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {(file.size / 1024 / 1024).toFixed(2)} MB
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+          </svg>
+          <p className="text-sm font-medium">Arrastra un archivo aquí o haz clic para seleccionar</p>
+          <p className="text-xs text-gray-400 mt-1">
+            Puedes subir un archivo .txt, .pdf, .epub o .mobi
+          </p>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default FileDropZone;
